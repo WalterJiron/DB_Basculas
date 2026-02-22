@@ -4,8 +4,8 @@ Este proyecto contiene la infraestructura y el esquema de base de datos para un 
 
 ## 🚀 Tecnologías Utilizadas
 
-- **Base de Datos**: Microsoft SQL Server (MSSQL) 2025.
-- **Contenedorización**: Docker & Docker Compose.
+- **Base de Datos**: Microsoft SQL Server (MSSQL) 2022.
+- **Contenedorización**: Docker con Docker Compose.
 - **Lenguaje**: T-SQL.
 
 ---
@@ -55,7 +55,7 @@ Control riguroso del flujo de efectivo y auditoría transaccional.
 
 ---
 
-## 🗺️ Diagrama de Base de Datos (ER)
+## Diagrama de Base de Datos (ER)
 
 Refleja la estructura completa del sistema, incluyendo los flujos de auditoría y gestión de caja.
 
@@ -122,16 +122,29 @@ erDiagram
 ## 🛠️ Instalación y Despliegue
 
 ### Requisitos
-- Docker y Docker Compose instalados.
+- Docker instalados.
+    - [Para Windows](https://docs.docker.com/desktop/setup/install/windows-install/)
+    - [Para Ubuntu](https://docs.docker.com/desktop/setup/install/linux/)
+      
+> [!TIP]
+> Por cualquier error en la instlación consultar [youtube](https://www.youtube.com/).   
+
+---
 
 ### Instalación
 1. **Iniciar el Servidor**:
    ```bash
    docker compose up -d
    ```
-   *El sistema detectará automáticamente el esquema y cargará los procedimientos, disparadores, vistas y datos maestros al iniciar por primera vez.*
-2. **Conexión**:
-   Utilice Azure Data Studio o SSMS apuntando a `localhost:1433` con las credenciales del archivo `compose.yml`.
+   
+> [!NOTE]
+> *El sistema detectará automáticamente el esquema y cargará los procedimientos, disparadores, vistas y datos maestros al iniciar por primera vez.*
+
+1. **Conexión**:
+   Utilice **Azure Data Studio** (recomendado). También puede conectarse desde su **IDE** preferido o mediante **SQL Server Management Studio (SSMS)** apuntando a `localhost:1433`, utilizando las credenciales definidas en el archivo `compose.yml`.
+
+> [!TIP]
+> Si quieres apagar el contenedor ejecuta: `docker compose down`   
 
 ---
 
