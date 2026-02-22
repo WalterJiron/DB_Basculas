@@ -124,7 +124,7 @@ erDiagram
 ### Requisitos
 - Docker instalados.
     - [Para Windows](https://docs.docker.com/desktop/setup/install/windows-install/)
-    - [Para Ubuntu](https://docs.docker.com/desktop/setup/install/linux/)
+    - [Para Linux](https://docs.docker.com/desktop/setup/install/linux/)
       
 > [!TIP]
 > Por cualquier error en la instlación consultar [youtube](https://www.youtube.com/).   
