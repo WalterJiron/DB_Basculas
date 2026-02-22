@@ -1,5 +1,7 @@
-CREATE DATABASE Bascula;
-
+IF NOT EXISTS (SELECT name FROM sys.databases WHERE name = 'Bascula')
+BEGIN
+    CREATE DATABASE Bascula;
+END
 GO
 
 USE Bascula;
@@ -175,6 +177,74 @@ CREATE TABLE ProveedorProducto(
     PRIMARY KEY (CodProv, CodProd) 
 );
 
+GO 
+
+-------------------------------- GESTION DE CAJA --------------------------------
+-- Tabla Caja
+CREATE TABLE Caja (
+    ID_Caja INT IDENTITY(1,1) PRIMARY KEY NOT NULL,
+    Nombre NVARCHAR(100) NOT NULL,
+    Ubicacion NVARCHAR(200),
+    Estado NVARCHAR(50) NOT NULL DEFAULT 'Activa',
+    FechaCreacion DATETIME NOT NULL DEFAULT GETDATE(),
+    FechaUltimaModificacion DATETIME NOT NULL DEFAULT GETDATE()
+);
+
+GO
+
+-- Tabla TransaccionCaja
+CREATE TABLE TransaccionCaja (
+    ID_Transaccion BIGINT IDENTITY(1,1) PRIMARY KEY NOT NULL,
+    ID_Caja INT NOT NULL,
+    Tipo_Transaccion NVARCHAR(50) NOT NULL, -- Venta, Devolucion, Apertura, Cierre, Ingreso, Egreso
+    Monto DECIMAL(18,2) NOT NULL,
+    Moneda NVARCHAR(10) NOT NULL DEFAULT 'USD',
+    Metodo_Pago NVARCHAR(50), -- Efectivo, TarjetaCredito, TarjetaDebito, Transferencia
+    ID_Ticket_Factura NVARCHAR(50), -- Número de ticket o factura, puede ser NULL
+    Estado_Transaccion NVARCHAR(50) NOT NULL DEFAULT 'Completada',
+    Comentario NVARCHAR(500),
+    Usuario_Aplicacion NVARCHAR(100) NOT NULL, -- Usuario de la aplicación
+    FechaHora_Transaccion DATETIME NOT NULL,
+    FechaHora_Registro DATETIME NOT NULL DEFAULT GETDATE(),
+    Usuario_Registro NVARCHAR(128) NOT NULL DEFAULT SUSER_NAME(),
+    CONSTRAINT FK_TransaccionCaja_Caja FOREIGN KEY (ID_Caja) REFERENCES Caja(ID_Caja)
+);
+
+GO
+
+-- Tabla ArqueoCaja
+CREATE TABLE ArqueoCaja (
+    ID_Arqueo BIGINT IDENTITY(1,1) PRIMARY KEY NOT NULL,
+    ID_Caja INT NOT NULL,
+    FechaHora_Apertura DATETIME NOT NULL,
+    FechaHora_Cierre DATETIME,
+    Monto_Apertura DECIMAL(18,2) NOT NULL,
+    Monto_Cierre DECIMAL(18,2),
+    Monto_Calculado DECIMAL(18,2),
+    Diferencia DECIMAL(18,2),
+    Usuario_Apertura NVARCHAR(100) NOT NULL,
+    Usuario_Cierre NVARCHAR(100),
+    Estado_Arqueo NVARCHAR(50) NOT NULL DEFAULT 'Abierto',
+    Comentario NVARCHAR(500),
+    CONSTRAINT FK_ArqueoCaja_Caja FOREIGN KEY (ID_Caja) REFERENCES Caja(ID_Caja)
+);
+
+GO
+
+-- Tabla de Auditoria para TransaccionCaja
+CREATE TABLE AuditoriaTransaccionCaja (
+    ID_Auditoria BIGINT IDENTITY(1,1) PRIMARY KEY NOT NULL,
+    ID_Transaccion BIGINT NOT NULL,
+    Evento NVARCHAR(10) NOT NULL, -- INSERT, UPDATE, DELETE
+    Valor_Anterior NVARCHAR(MAX), -- JSON o texto con los valores anteriores (solo para UPDATE y DELETE)
+    Valor_Nuevo NVARCHAR(MAX),    -- JSON o texto con los valores nuevos (solo para INSERT y UPDATE)
+    Usuario_Base_Datos NVARCHAR(128) NOT NULL,
+    Usuario_Aplicacion NVARCHAR(100), -- Copia del usuario de la aplicación en el momento de la transacción
+    FechaHora_Auditoria DATETIME NOT NULL DEFAULT GETDATE(),
+    Direccion_IP NVARCHAR(50), -- Se puede intentar capturar con CONNECTIONPROPERTY('client_net_address')
+    Nombre_Host NVARCHAR(128) -- Se puede capturar con HOST_NAME()
+);
+
 GO
 
 -- Tabla de Compras 
@@ -183,6 +253,7 @@ CREATE TABLE Compra(
     CodProv INT FOREIGN KEY REFERENCES Proveedor(CodProv) ON DELETE CASCADE ON UPDATE CASCADE,
     TotalCompra DECIMAL(18,4) NOT NULL,
     IdUser UNIQUEIDENTIFIER FOREIGN KEY REFERENCES Users(CodigoUser) ON DELETE CASCADE ON UPDATE CASCADE NOT NULL,
+    ID_Caja INT FOREIGN KEY REFERENCES Caja(ID_Caja) ON DELETE CASCADE ON UPDATE CASCADE NOT NULL,
     Comentario NVARCHAR(300),
     FechaCompra DATETIMEOFFSET DEFAULT SYSDATETIMEOFFSET(),
     FechaRecepcion DATETIMEOFFSET, -- Fecha de recepcion de la compra
@@ -325,6 +396,7 @@ CREATE TABLE Venta(
     IdUser UNIQUEIDENTIFIER FOREIGN KEY REFERENCES Users(CodigoUser) ON DELETE CASCADE ON UPDATE CASCADE NOT NULL,
     Comentario NVARCHAR(300),
     FechaVenta DATETIMEOFFSET DEFAULT SYSDATETIMEOFFSET(),
+    ID_Caja INT FOREIGN KEY REFERENCES Caja(ID_Caja) ON DELETE CASCADE ON UPDATE CASCADE NOT NULL,
     EstadoVenta NVARCHAR(15) CHECK (EstadoVenta IN ('registrada', 'completada', 'cancelada')) DEFAULT 'registrada' NOT NULL
 );
 
@@ -381,66 +453,4 @@ CREATE TABLE Taller(
     DateUpdate DATETIMEOFFSET,
     DateDelete DATETIMEOFFSET,
     EstadoTaller BIT DEFAULT 1 -- 1: En reparacion; 0:reparado
-);
-
-GO
-
--------------------------------- GESTION DE CAJA --------------------------------
--- Tabla Caja
-CREATE TABLE Caja (
-    ID_Caja INT IDENTITY(1,1) PRIMARY KEY,
-    Nombre NVARCHAR(100) NOT NULL,
-    Ubicacion NVARCHAR(200),
-    Estado NVARCHAR(50) NOT NULL DEFAULT 'Activa',
-    FechaCreacion DATETIME NOT NULL DEFAULT GETDATE(),
-    FechaUltimaModificacion DATETIME NOT NULL DEFAULT GETDATE()
-);
-
--- Tabla TransaccionCaja
-CREATE TABLE TransaccionCaja (
-    ID_Transaccion BIGINT IDENTITY(1,1) PRIMARY KEY,
-    ID_Caja INT NOT NULL,
-    Tipo_Transaccion NVARCHAR(50) NOT NULL, -- Venta, Devolucion, Apertura, Cierre, Ingreso, Egreso
-    Monto DECIMAL(18,2) NOT NULL,
-    Moneda NVARCHAR(10) NOT NULL DEFAULT 'USD',
-    Metodo_Pago NVARCHAR(50), -- Efectivo, TarjetaCredito, TarjetaDebito, Transferencia
-    ID_Ticket_Factura NVARCHAR(50), -- Número de ticket o factura, puede ser NULL
-    Estado_Transaccion NVARCHAR(50) NOT NULL DEFAULT 'Completada',
-    Comentario NVARCHAR(500),
-    Usuario_Aplicacion NVARCHAR(100) NOT NULL, -- Usuario de la aplicación
-    FechaHora_Transaccion DATETIME NOT NULL,
-    FechaHora_Registro DATETIME NOT NULL DEFAULT GETDATE(),
-    Usuario_Registro NVARCHAR(128) NOT NULL DEFAULT SUSER_NAME(),
-    CONSTRAINT FK_TransaccionCaja_Caja FOREIGN KEY (ID_Caja) REFERENCES Caja(ID_Caja)
-);
-
--- Tabla ArqueoCaja
-CREATE TABLE ArqueoCaja (
-    ID_Arqueo BIGINT IDENTITY(1,1) PRIMARY KEY,
-    ID_Caja INT NOT NULL,
-    FechaHora_Apertura DATETIME NOT NULL,
-    FechaHora_Cierre DATETIME,
-    Monto_Apertura DECIMAL(18,2) NOT NULL,
-    Monto_Cierre DECIMAL(18,2),
-    Monto_Calculado DECIMAL(18,2),
-    Diferencia DECIMAL(18,2),
-    Usuario_Apertura NVARCHAR(100) NOT NULL,
-    Usuario_Cierre NVARCHAR(100),
-    Estado_Arqueo NVARCHAR(50) NOT NULL DEFAULT 'Abierto',
-    Comentario NVARCHAR(500),
-    CONSTRAINT FK_ArqueoCaja_Caja FOREIGN KEY (ID_Caja) REFERENCES Caja(ID_Caja)
-);
-
--- Tabla de Auditoria para TransaccionCaja
-CREATE TABLE AuditoriaTransaccionCaja (
-    ID_Auditoria BIGINT IDENTITY(1,1) PRIMARY KEY,
-    ID_Transaccion BIGINT NOT NULL,
-    Evento NVARCHAR(10) NOT NULL, -- INSERT, UPDATE, DELETE
-    Valor_Anterior NVARCHAR(MAX), -- JSON o texto con los valores anteriores (solo para UPDATE y DELETE)
-    Valor_Nuevo NVARCHAR(MAX),    -- JSON o texto con los valores nuevos (solo para INSERT y UPDATE)
-    Usuario_Base_Datos NVARCHAR(128) NOT NULL,
-    Usuario_Aplicacion NVARCHAR(100), -- Copia del usuario de la aplicación en el momento de la transacción
-    FechaHora_Auditoria DATETIME NOT NULL DEFAULT GETDATE(),
-    Direccion_IP NVARCHAR(50), -- Se puede intentar capturar con CONNECTIONPROPERTY('client_net_address')
-    Nombre_Host NVARCHAR(128) -- Se puede capturar con HOST_NAME()
 );
