@@ -1,0 +1,9 @@
+services:
+  db:
+    build: .
+    container_name: db_basculas
+    environment:
+      - ACCEPT_EULA=Y
+      - MSSQL_SA_PASSWORD=YourStrong!Passw0rd
+    ports:
+      - "1433:1433"
