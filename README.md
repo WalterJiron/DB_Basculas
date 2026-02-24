@@ -105,6 +105,7 @@ erDiagram
     Compra ||--o{ HistorialCompra : "audita"
     TransaccionCaja ||--o{ AuditoriaTransaccionCaja : "seguridad"
 ```
+Si quieres ver mejor el esquema relacional haz clic **[aquí](https://github.com/WalterJiron/DB_Basculas/blob/main/db_basculas.pdf)**
 
 ---
 
