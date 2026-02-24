@@ -131,23 +131,92 @@ erDiagram
 
 ---
 
-### Instalación
-1. **Iniciar el Servidor**:
-   ```bash
-   docker compose up -d
-   ```
+## Instalación
+
+### 1. **Configuración Inicial**:
+
+Antes de iniciar el contenedor, edita el archivo compose.yml y configura la variable de entorno:
+
+```yml
+    MSSQL_SA_PASSWORD= Tu_contraseña
+```
+> [!NOTE]
+> El valor que le des a esa variable sera la contraseña de ususario **sa** que usaras para
+> conectarte a la base de datos.
+
+---
+    
+### 2. **Iniciar el Servidor**:
+```bash
+    docker compose up -d
+```
    
 > [!NOTE]
 > *El sistema detectará automáticamente el esquema y cargará los procedimientos, disparadores, vistas y datos maestros al iniciar por primera vez.*
 
-1. **Conexión**:
-   Utilice **Azure Data Studio** (recomendado). También puede conectarse desde su **IDE** preferido o mediante **SQL Server Management Studio (SSMS)** apuntando a `localhost:1433`, utilizando las credenciales definidas en el archivo `compose.yml`.
+> [!WARNING]
+> Antes de ejecutar este comando, verifique que el puerto **1433** no esté siendo utilizado por otra instancia de **SQL Server** u otro servicio.
+> Si el puerto está ocupado, el contenedor no podrá iniciarse y se producirá un error de conflicto de puerto (*port binding conflict*).
+>
+> **En Windows (PowerShell o CMD):**
+>
+> ```powershell
+> netstat -ano | findstr :1433
+> ```
+>
+> **En Linux:**
+>
+> ```bash
+> sudo lsof -i :1433
+> ```
+>
+> Si el comando devuelve resultados, significa que el puerto está en uso. En ese caso, deberá:
+>
+> * Detener el servicio que lo está utilizando, o
+> * Modificar el puerto expuesto en el archivo `compose.yml`
+>     * Ejemplo puedes usar el puerto 1434 o algún puerto que esté disponible:
+>
+> ```yml
+> ports:
+>      - "1434:1433"
+> ``` 
+---
 
-> [!TIP]
-> Si quieres apagar el contenedor ejecuta: `docker compose down`   
+### 3. **Conexión a la Base de Datos**
+
+Una vez que el contenedor esté en ejecución, puedes conectarte utilizando cualquiera de las siguientes herramientas:
+
+* **Azure Data Studio** (recomendado por su ligereza y compatibilidad multiplataforma)
+* **SQL Server Management Studio (SSMS)**
+* **Visual Studio Code (VScode)**
+* Cualquier IDE con soporte para SQL Server
+
+#### 🔐 Parámetros de Conexión
+
+| Parámetro  | Valor                                               |
+| ---------- | --------------------------------------------------- |
+| Servidor   | `localhost`                                         |
+| Puerto     | `1433` *(o el puerto configurado en `compose.yml`)* |
+| Usuario    | `sa`                                                |
+| Contraseña | La definida en `MSSQL_SA_PASSWORD`                  |
+
+Si cambiaste el puerto, por ejemplo a **1434**, deberás conectarte de la siguiente manera:
+
+```
+localhost,1434
+```
+
+o
+
+```
+127.0.0.1,1434
+```
 
 ---
 
-## 🔒 Auditoría y Seguridad
-- **Historiales**: El sistema nunca elimina datos sensibles; en su lugar, utiliza tablas de historial (`HistorialPrecioProducto`, `HistorialCompra`) y campos de `DateDelete`.
-- **Integridad**: Todas las transacciones financieras están vinculadas a un usuario y una caja específica para control de fraude.
+> [!TIP]
+> Para detener y eliminar el contenedor ejecuta:
+>
+> ```bash
+> docker compose down
+> ```
